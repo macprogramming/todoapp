@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>My Todo List</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/newBootstrap3.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular-sanitize.js"></script>
+    <style type="text/css">
+        .arrow-up{
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 10px solid black;
+            display: inline-block;
+        } 
+        .arrow-down{
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 10px solid black;
+            display: inline-block;
+        }
+        th{
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body ng-app="myApp">
+    <div class="container">
+        <div ng-controller="ctrl1" class="row">
+            <div class="page-header">
+                <h1>
+                    My To Do List
+                    <span class="label label-default" ng-class="warningLevel()" ng-hide="incompleteCount() == 0">
+                        {{incompleteCount()}}
+                    </span>
+                </h1>
+            </div>
+            <div class="well well-light">
+                <div class="row">
+                    <section class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+                        <input type="text" class="form-control" ng-model="categoryText" placeholder="Category"/>
+                    </section>
+                    <section class="col-xs-7 col-sm-7 col-md-7 col-lg-7">
+                        <input type="text" class="form-control" ng-model="actionText" placeholder="Task"/>
+                    </section>
+                    <section class="col-xs-1 col-sm-1 col-md-1 col-lg-1 text-right">
+                        <div class="input-group" style="margin-bottom:10px;">
+                            <span class="input-group-btn" ng-hide="addButton">
+                                <button class="btn btn-default btn-block" ng-click="addNewItem(categoryText,actionText)">Add</button>
+                            </span>
+                            <span class="input-group-btn" ng-show="updateButton">
+                                <button class="btn btn-default btn-block" ng-click="updateTaskData(item)">Update</button>
+                            </span>
+                            <span class="input-group-btn" ng-show="cancelButton">
+                                <button class="btn btn-default btn-block" ng-click="cancelTaskData(item)">Cancel</button>
+                            </span>
+                        </div>
+                    </section>
+                </div>
+                <div ng-bind-html="errMessage" id="something"></div>
+            </div>
+            <div class="panel well well-light">
+                <div class="row">
+                    <section class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+                        <input class="form-control" type="text" placeholder="Search" ng-model="searchTask">
+                    </section>
+                    <section class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Search" ng-model="searchTextTask"/>
+                            <div class="input-group-btn">
+                                <button class="btn btn-primary" type="submit" ng-click="btn_searchTask()">
+                                    <span class="glyphicon glyphicon-search"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
+                        <div class="form-group">
+                            <select ng-model="selecatedCategory" ng-options="x for x in sCategory" class="form-control">
+                                <option value="" selected disabled>Select</option>
+                            </select>
+                        </div>
+                    </section>
+                    <section class="col-xs-3 col-sm-1 col-md-1 col-lg-1 pull-right">
+                        <div class="form-group">
+                            <select ng-model="viewby" ng-options="x for x in sLength" ng-change="setItemsPerPage(viewby)" class="form-control">
+                            </select>
+                        </div>
+                    </section>
+                </div><br>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sr.No.</th>
+                                <th ng-click="sortTaskData('actionCategory')">Category
+                                    <span ng-class="getSortClass('actionCategory')"></span>
+                                </th>
+                                <th ng-click="sortTaskData('action')">Task
+                                    <span ng-class="getSortClass('action')"></span>
+                                </th>
+                                <th>Chk</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in todo.items.slice(((currentPage-1)*itemsPerPage), ((currentPage)*itemsPerPage)) | orderBy:sortColumn:reverseSort | filter:searchTask | filter:searchTaskQuery | filter:selecatedCategory">
+                                <td>{{$index + 1}}</td>
+                                <td>{{item.actionCategory}}</td>
+                                <td>{{item.action}}</td>
+                                <td><input type="checkbox" ng-model="item.done" /></td>
+                                <td>{{item.done}}</td>
+                                <td>
+                                    <button type="button" class="btn btn-xs btn-warning" ng-click="updateTask(item)">Update</button>
+                                    <button type="button" class="btn btn-xs btn-danger" ng-click="deleteData(item)">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <br>
+                <ul class="pagination pull-right" ng-model="new_pagination">
+                    <li class="page-item"><a class="page-link" ng-hide="currentPage == 1" ng-click="currentPage=currentPage-1">Previous</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">{{currentPage}}</a></li>
+                    <li class="page-item"><a class="page-link" ng-hide="currentPage >= $scope.todo.length/pageSize - 1" ng-click="currentPage=currentPage+1">Next</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.js"></script>
+    <script>
+        var model = {
+            user: "Vikas",
+            items: [{ id:1,actionCategory:"Shopping", action: "Buy Flowers", done: false},
+            { id:2,actionCategory:"Shopping", action: "Get Shoes", done: false},
+            { id:3,actionCategory:"Shopping", action: "Collect Tickets", done: true},
+            { id:4,actionCategory:"Education", action: "Learn AngularJs", done: false},
+            { id:5,actionCategory:"Education", action: "Learn Java", done: false},
+            { id:6,actionCategory:"Education", action: "Learn Python", done: false},
+            { id:7,actionCategory:"Education", action: "Learn MongoDB", done: false},
+            { id:8,actionCategory:"Game", action: "Play Cricket", done: false},
+           ]
+        };
+
+        var myApp = angular.module("myApp", ['ngSanitize']);
+        myApp.controller("ctrl1", function ($scope, $window, $timeout,$filter) {
+            $scope.todo = model;
+            let mapingCountryCity={};
+            function getUniqueValues(JsonData, property) {
+                let unique = {};
+                let distinct = [];
+                for (var i in JsonData) {
+                    if (typeof (unique[JsonData[i][property]]) == "undefined") {
+                        distinct.push(JsonData[i][property]);
+                        mapingCountryCity[JsonData[i][property]]=[];
+                    }
+                    if (typeof (unique[JsonData[i]["actionCategory"]]) == "undefined") {
+                        mapingCountryCity[JsonData[i][property]].push(JsonData[i]["actionCategory"]);
+                    }
+                    unique[JsonData[i]["actionCategory"]] = 0;
+                    unique[JsonData[i][property]] = 0;
+                }
+                return distinct;
+            }
+            $scope.sCategory = getUniqueValues(JSON.parse(JSON.stringify(model.items)),"actionCategory").sort();
+            $scope.incompleteCount = function () {
+                var count = 0;
+                angular.forEach($scope.todo.items, function (item123){
+                    if (!item123.done) { count++ }
+                });
+                return count;
+            }
+            $scope.warningLevel = function(){
+                return $scope.incompleteCount() < 3 ? "label-success" : "label-warning";
+            }
+            $scope.addNewItem = function (txtCategoryText,txtActionText) {
+                if($scope.categoryText == null || $scope.actionText == null){
+                    $scope.errMessage = '<div class="alert alert-danger"><strong>Please enter category and task</strong></div>';
+                }else{
+                    let index = $scope.todo.items.length + 1;
+                    $scope.todo.items.push({
+                        id:index,
+                        actionCategory:txtCategoryText,
+                        action: txtActionText,
+                        done: false
+                    });
+                    $scope.categoryText = "";
+                    $scope.actionText = "";
+                    $scope.errMessage = "";
+                    $scope.sCategory = getUniqueValues(JSON.parse(JSON.stringify(model.items)),"actionCategory").sort();
+                }
+            }
+            $scope.updateTask = function (item,index) {
+                $scope.edited = item;
+                $scope.id = $scope.edited.id;
+                $scope.categoryText = $scope.edited.actionCategory;
+                $scope.actionText = $scope.edited.action;
+                $scope.updateButton = true;
+                $scope.cancelButton = true;
+                $scope.addButton = true;
+            }
+            $scope.newTask = [];
+            $scope.edited = -1;
+            $scope.updateTaskData = function(){
+                $.grep($scope.todo.items, function(e){
+                    if(e.id == $scope.id){
+                        e.actionCategory = $scope.categoryText;
+                        e.action = $scope.actionText;
+                    }
+                    $scope.addButton = false;
+                    $scope.updateButton = false;
+                    $scope.cancelButton = false;
+                });
+                $scope.categoryText = "";
+                $scope.actionText = "";
+                $scope.sCategory = getUniqueValues(JSON.parse(JSON.stringify(model.items)),"actionCategory").sort();
+            }
+            $scope.deleteData = function (item) {
+                let index = $scope.todo.items.indexOf(item);
+                $scope.todo.items.splice(index,1);
+                $scope.sCategory = getUniqueValues(JSON.parse(JSON.stringify(model.items)),"actionCategory").sort();
+                //console.log($scope.todo.items);
+            };
+            $scope.cancelTaskData = function(item){
+                $scope.addButton = false;0
+                $scope.updateButton = false;
+                $scope.cancelButton = false;
+                $scope.categoryText = "";
+                $scope.actionText = "";
+            }
+            
+            $scope.viewby = 5;
+            $scope.currentPage = 1;
+            $scope.itemsPerPage = $scope.viewby;
+            $scope.sLength = [3,5,10,20];
+            
+            $scope.setItemsPerPage = function(num) {
+                $scope.itemsPerPage = num;
+                $scope.currentPage = 1;
+            }
+            
+            $scope.pageChanged = function() {
+                console.log('Page changed to: ' + $scope.currentPage);
+            };
+            var arr = [];
+            var pageSize = 10;
+            var pageCount  = 1;
+            $scope.goPage = function(){
+                arr = $scope.todo.items;
+                for(let i=0; i < arr.length; i++){
+                    pageCount = Math.ceil(arr.length / pageSize);
+                    console.log(pageCount);
+                }
+            }
+            $scope.btn_searchTask = function(){
+                $scope.searchTaskQuery = $scope.searchTextTask;
+            }
+
+            $scope.sortColumn = "action";
+            $scope.reverseSort = false;
+
+            $scope.sortTaskData = function(column){
+                $scope.reverseSort = ($scope.sortColumn == column) ? !$scope.reverseSort : false;
+                $scope.sortColumn = column;
+            }
+
+            $scope.getSortClass = function(column){
+                if($scope.sortColumn == column){
+                    return $scope.reverseSort ? 'arrow-down' : 'arrow-up'
+                }
+                return '';
+            }
+        });
+    </script>
+</body>
+</html>
